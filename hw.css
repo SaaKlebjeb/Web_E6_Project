@@ -1,0 +1,125 @@
+/* Reset */
+* {
+
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background: #fafafa;
+}
+.boss{
+    border: 5px solid black;
+    padding: 5px;
+    width:35%;
+    margin:auto;
+    margin-top:30px;
+}
+
+/* Container */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Header */
+header {
+  border-bottom: 1px solid #ccc;
+  padding: 1rem;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+}
+
+.hero {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* Grid Section */
+.grid-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.grid-section article {
+  border: 1px solid #ccc;
+  padding: 30px;
+  background: #fff;
+}
+
+/* Reviews */
+.reviews {
+  margin: auto;
+}
+
+.review-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+blockquote {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  width: 80%;
+  background: #fff;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 1rem;
+  border-top: 1px solid #ccc;
+  margin-top: 2rem;
+}
+
+/* ✅ Responsive for smaller screens */
+@media (max-width: 1024px) {
+  .grid-section {
+    grid-template-columns: 1fr 1fr;
+  }
+  blockquote {
+    width: 45%;
+  }
+}
+
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .grid-section {
+    grid-template-columns: 1fr;
+  }
+  .review-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+  blockquote {
+    width: 80%;
+  }
+}
+li{
+    list-style-type:number;
+}

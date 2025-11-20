@@ -1,0 +1,49 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        div{
+            width: 100%;
+            height: 100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+        .btn{
+            width:100px;
+            height: 50px;
+            border-radius:15px;
+            background-color:blue;
+            color:white;
+            font-size: medium;
+            font-weight: 700;
+            border:none;
+            transition:all 0.3s ease
+        }
+        .btn:hover{
+            background-color:darkblue;
+            cursor:pointer;
+        }
+        .btn:active{
+            scale:1.05;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <button type="button" class="btn">Click Me</button>
+    </div>
+</body>
+<script>
+var btn=document.querySelector('.btn');
+    btn.addEventListener('click',()=>{
+        alert('Ah joy mray')
+    })
+
+
+
+
+</script>
+</html>

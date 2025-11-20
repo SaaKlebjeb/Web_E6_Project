@@ -1,0 +1,1057 @@
+<!--
+Advanced Single-file Bookstore Web App
+- Built with plain HTML, CSS and JavaScript (single file)
+- Features: responsive product catalog, search, filters, sorting, pagination,
+  product detail modal, shopping cart with localStorage persistence, checkout form (mock),
+  lightweight admin panel to add/edit books (in-memory/localStorage), and accessible markup.
+
+How to use:
+1. Save this file as `bookstore.html`.
+2. Open it in a modern browser.
+3. The app stores cart and catalog in localStorage so your cart persists between reloads.
+
+Notes:
+- This is a frontend-only demo. Payment is mocked (no real payment).
+- You can replace image URLs or extend the product dataset in the JS `sampleBooks` array.
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PaperTrail — Modern Bookstore</title>
+    <style>
+      :root {
+        --bg: #0f1724;
+        --card: #0b1220;
+        --muted: #9aa6b2;
+        --accent: #7c3aed;
+        --glass: rgba(255, 255, 255, 0.03);
+        --radius: 12px;
+        --glass-2: rgba(255, 255, 255, 0.02);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, Segoe UI, Roboto,
+          Helvetica, Arial;
+        margin: 0;
+        background: linear-gradient(180deg, var(--bg), #071027);
+        color: #e6eef6;
+        min-height: 100vh;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 24px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.02),
+          transparent
+        );
+        backdrop-filter: blur(6px);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0;
+      }
+      header .actions {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .btn {
+        background: var(--accent);
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn.alt {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      main {
+        padding: 20px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          order: 2;
+        }
+      }
+
+      /* Sidebar */
+      .sidebar {
+        background: var(--card);
+        padding: 16px;
+        border-radius: 12px;
+        min-height: 300px;
+      }
+      .search input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: var(--glass);
+        color: inherit;
+      }
+      .filters {
+        margin-top: 16px;
+      }
+      .filters label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .chip {
+        display: inline-block;
+        padding: 6px 8px;
+        border-radius: 999px;
+        margin: 4px 4px 0 0;
+        background: var(--glass-2);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .chip.active {
+        background: linear-gradient(
+          90deg,
+          rgba(124, 58, 237, 0.15),
+          rgba(6, 182, 212, 0.08)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      /* Catalog */
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        gap: 12px;
+      }
+      .catalog {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      @media (max-width: 1100px) {
+        .catalog {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 650px) {
+        .catalog {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          transparent
+        );
+        padding: 12px;
+        border-radius: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .cover {
+        width: 90px;
+        height: 128px;
+        border-radius: 8px;
+        flex: 0 0 90px;
+        object-fit: cover;
+        background: #071226;
+      }
+      .meta {
+        flex: 1;
+      }
+      .title {
+        font-weight: 700;
+        margin: 0 0 6px 0;
+      }
+      .author {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      .price {
+        font-weight: 800;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .actions-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      /* Cart */
+      .cart-btn {
+        position: relative;
+      }
+      .badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        background: #ef4444;
+        color: white;
+        font-size: 12px;
+        padding: 3px 7px;
+        border-radius: 999px;
+      }
+      .drawer {
+        position: fixed;
+        right: 20px;
+        top: 80px;
+        width: 360px;
+        background: var(--card);
+        border-radius: 14px;
+        padding: 12px;
+        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+      }
+      .cart-list {
+        max-height: 320px;
+        overflow: auto;
+        margin-top: 8px;
+      }
+      .cart-item {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .qty {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .pill {
+        background: var(--glass);
+        padding: 6px 8px;
+        border-radius: 8px;
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal {
+        background: linear-gradient(180deg, #071227, #081022);
+        border-radius: 12px;
+        padding: 18px;
+        max-width: 900px;
+        width: 100%;
+        box-shadow: 0 15px 40px rgba(2, 6, 23, 0.6);
+      }
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 18px;
+      }
+      .rating {
+        color: #ffb020;
+      }
+
+      footer {
+        margin-top: 24px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      /* tiny forms */
+      input[type="number"],
+      input[type="text"],
+      select {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: transparent;
+        color: inherit;
+      }
+
+      /* tiny admin */
+      .admin {
+        margin-top: 12px;
+        border-top: 1px dashed rgba(255, 255, 255, 0.03);
+        padding-top: 12px;
+      }
+
+      /* pagination */
+      .pagination {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .page {
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .page.active {
+        background: var(--accent);
+      }
+
+      /* small helpers */
+      .muted {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="logo">PT</div>
+        <div>
+          <h1>PaperTrail</h1>
+          <div class="muted" style="font-size: 12px">
+            A demo bookstore — HTML / CSS / JavaScript
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="muted" id="cart-total-amount">$0.00</div>
+        <button class="btn alt" id="admin-toggle">Admin</button>
+        <button class="btn cart-btn" id="open-cart">
+          Cart <span class="badge" id="cart-count">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="search">
+            <label class="muted">Search</label>
+            <input
+              id="search"
+              placeholder="Search by title or author"
+              aria-label="search books"
+            />
+          </div>
+
+          <div class="filters">
+            <label>Category</label>
+            <div id="category-chips">
+              <!-- dynamically filled -->
+            </div>
+
+            <label style="margin-top: 10px">Sort</label>
+            <select id="sort">
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
+              <option value="rating-desc">Top Rated</option>
+            </select>
+
+            <label style="margin-top: 10px">Price range</label>
+            <div style="display: flex; gap: 8px">
+              <input id="min-price" type="number" placeholder="min" />
+              <input id="max-price" type="number" placeholder="max" />
+            </div>
+
+            <div style="margin-top: 12px; display: flex; gap: 8px">
+              <button class="btn" id="apply-filters">Apply</button>
+              <button class="btn alt" id="reset-filters">Reset</button>
+            </div>
+          </div>
+
+          <div class="admin" id="admin-panel" style="display: none">
+            <label class="muted">Admin — Add book</label>
+            <input id="admin-title" placeholder="Title" /><br /><br />
+            <input id="admin-author" placeholder="Author" /><br /><br />
+            <input
+              id="admin-price"
+              type="number"
+              placeholder="Price"
+            /><br /><br />
+            <input
+              id="admin-cover"
+              placeholder="Cover image URL (optional)"
+            /><br /><br />
+            <select id="admin-category">
+              <option>Fiction</option>
+              <option>Non-fiction</option>
+              <option>Science</option>
+              <option>Business</option>
+              <option>Children</option>
+            </select>
+            <div style="margin-top: 8px">
+              <button class="btn" id="admin-add">Add Book</button>
+            </div>
+          </div>
+        </aside>
+
+        <section>
+          <div class="controls">
+            <div class="muted" id="result-summary">Showing 0 books</div>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <div class="muted">Items per page</div>
+              <select id="per-page">
+                <option>6</option>
+                <option>9</option>
+                <option>12</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="catalog" id="catalog">
+            <!-- items -->
+          </div>
+
+          <div style="display: flex; justify-content: center; margin-top: 18px">
+            <div class="pagination" id="pagination"></div>
+          </div>
+
+          <footer>
+            Built with ❤️ — Demo only. Cart and catalog persist to localStorage
+            but payments are mocked.
+          </footer>
+        </section>
+      </div>
+    </main>
+
+    <!-- CART DRAWER -->
+    <div id="cart-drawer" class="drawer" style="display: none">
+      <h3>Shopping Cart</h3>
+      <div class="cart-list" id="cart-list"></div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 12px;
+        "
+      >
+        <div>
+          <div class="muted">Subtotal</div>
+          <div id="cart-subtotal" style="font-weight: 800">$0.00</div>
+        </div>
+        <div>
+          <button class="btn" id="checkout">Checkout</button>
+        </div>
+      </div>
+      <div style="text-align: right; margin-top: 8px">
+        <button class="btn alt" id="close-cart">Close</button>
+      </div>
+    </div>
+
+    <!-- MODAL (product / checkout) -->
+    <div id="modal-root" style="display: none"></div>
+
+    <script>
+      // ---------- Sample Data ----------
+      const sampleBooks = [
+        {
+          id: 1,
+          title: "The Midnight Library",
+          author: "Matt Haig",
+          price: 12.99,
+          category: "Fiction",
+          rating: 4.2,
+          cover: "https://picsum.photos/seed/book1/300/420",
+        },
+        {
+          id: 2,
+          title: "Atomic Habits",
+          author: "James Clear",
+          price: 16.5,
+          category: "Business",
+          rating: 4.6,
+          cover: "https://picsum.photos/seed/book2/300/420",
+        },
+        {
+          id: 3,
+          title: "Sapiens",
+          author: "Yuval Noah Harari",
+          price: 18.0,
+          category: "Science",
+          rating: 4.5,
+          cover: "https://picsum.photos/seed/book3/300/420",
+        },
+        {
+          id: 4,
+          title: "The Little Prince",
+          author: "Antoine de Saint-Exupéry",
+          price: 9.99,
+          category: "Children",
+          rating: 4.8,
+          cover: "https://picsum.photos/seed/book4/300/420",
+        },
+        {
+          id: 5,
+          title: "Thinking, Fast and Slow",
+          author: "Daniel Kahneman",
+          price: 14.3,
+          category: "Non-fiction",
+          rating: 4.4,
+          cover: "https://picsum.photos/seed/book5/300/420",
+        },
+        {
+          id: 6,
+          title: "Dune",
+          author: "Frank Herbert",
+          price: 13.5,
+          category: "Fiction",
+          rating: 4.7,
+          cover: "https://picsum.photos/seed/book6/300/420",
+        },
+        {
+          id: 7,
+          title: "Educated",
+          author: "Tara Westover",
+          price: 11.95,
+          category: "Non-fiction",
+          rating: 4.3,
+          cover: "https://picsum.photos/seed/book7/300/420",
+        },
+        {
+          id: 8,
+          title: "Where the Crawdads Sing",
+          author: "Delia Owens",
+          price: 12.49,
+          category: "Fiction",
+          rating: 4.1,
+          cover: "https://picsum.photos/seed/book8/300/420",
+        },
+        {
+          id: 9,
+          title: "The Psychology of Money",
+          author: "Morgan Housel",
+          price: 15.99,
+          category: "Business",
+          rating: 4.6,
+          cover: "https://picsum.photos/seed/book9/300/420",
+        },
+        {
+          id: 10,
+          title: "Brief Answers to the Big Questions",
+          author: "Stephen Hawking",
+          price: 10.0,
+          category: "Science",
+          rating: 4.0,
+          cover: "https://picsum.photos/seed/book10/300/420",
+        },
+      ];
+
+      // ---------- App State & Storage ----------
+      const storageKeys = {
+        catalog: "papertrail_catalog",
+        cart: "papertrail_cart",
+      };
+      function loadCatalog() {
+        const raw = localStorage.getItem(storageKeys.catalog);
+        if (raw) return JSON.parse(raw);
+        localStorage.setItem(storageKeys.catalog, JSON.stringify(sampleBooks));
+        return sampleBooks.slice();
+      }
+      function saveCatalog(data) {
+        localStorage.setItem(storageKeys.catalog, JSON.stringify(data));
+      }
+
+      function loadCart() {
+        return JSON.parse(localStorage.getItem(storageKeys.cart) || "[]");
+      }
+      function saveCart(c) {
+        localStorage.setItem(storageKeys.cart, JSON.stringify(c));
+      }
+
+      let catalog = loadCatalog();
+      let cart = loadCart();
+
+      // ---------- UI References ----------
+      const catalogEl = document.getElementById("catalog");
+      const searchInput = document.getElementById("search");
+      const categoryChips = document.getElementById("category-chips");
+      const sortEl = document.getElementById("sort");
+      const resultSummary = document.getElementById("result-summary");
+      const perPageEl = document.getElementById("per-page");
+      const paginationEl = document.getElementById("pagination");
+      const cartCountEl = document.getElementById("cart-count");
+      const cartDrawer = document.getElementById("cart-drawer");
+      const cartListEl = document.getElementById("cart-list");
+      const cartSubtotalEl = document.getElementById("cart-subtotal");
+      const cartTotalAmount = document.getElementById("cart-total-amount");
+
+      // filters state
+      const state = {
+        query: "",
+        category: null,
+        sort: "featured",
+        minPrice: null,
+        maxPrice: null,
+        page: 1,
+        perPage: parseInt(perPageEl.value),
+      };
+
+      // ---------- Utils ----------
+      function currency(n) {
+        return "$" + n.toFixed(2);
+      }
+      function unique(arr, key) {
+        return [...new Set(arr.map((x) => x[key]))];
+      }
+
+      // ---------- Render Category Chips ----------
+      function renderCategoryChips() {
+        const cats = unique(catalog, "category");
+        categoryChips.innerHTML = "";
+        const all = document.createElement("div");
+        all.className = "chip " + (state.category ? "" : "active");
+        all.textContent = "All";
+        all.addEventListener("click", () => {
+          state.category = null;
+          runFilters();
+        });
+        categoryChips.appendChild(all);
+        cats.forEach((c) => {
+          const d = document.createElement("div");
+          d.className = "chip " + (state.category === c ? "active" : "");
+          d.textContent = c;
+          d.addEventListener("click", () => {
+            state.category = c;
+            runFilters();
+          });
+          categoryChips.appendChild(d);
+        });
+      }
+
+      // ---------- Apply Filters ----------
+      function runFilters() {
+        state.query = searchInput.value.trim().toLowerCase();
+        state.perPage = parseInt(perPageEl.value);
+        state.page = 1;
+        applyAndRender();
+      }
+
+      function applyAndRender() {
+        let items = catalog.slice();
+        // search
+        if (state.query) {
+          items = items.filter(
+            (b) =>
+              b.title.toLowerCase().includes(state.query) ||
+              b.author.toLowerCase().includes(state.query)
+          );
+        }
+        // category
+        if (state.category) {
+          items = items.filter((b) => b.category === state.category);
+        }
+        // price
+        if (state.minPrice != null) {
+          items = items.filter((b) => b.price >= state.minPrice);
+        }
+        if (state.maxPrice != null) {
+          items = items.filter((b) => b.price <= state.maxPrice);
+        }
+        // sort
+        if (state.sort === "price-asc") items.sort((a, b) => a.price - b.price);
+        if (state.sort === "price-desc")
+          items.sort((a, b) => b.price - a.price);
+        if (state.sort === "rating-desc")
+          items.sort((a, b) => b.rating - b.rating);
+
+        // pagination
+        const per = state.perPage;
+        const total = items.length;
+        const pages = Math.max(1, Math.ceil(total / per));
+        if (state.page > pages) state.page = pages;
+        const start = (state.page - 1) * per;
+        const pageItems = items.slice(start, start + per);
+
+        resultSummary.textContent = `Showing ${start + 1} - ${
+          start + pageItems.length
+        } of ${total} books`;
+        renderCatalog(pageItems);
+        renderPagination(pages);
+      }
+
+      // ---------- Render Catalog ----------
+      function renderCatalog(items) {
+        catalogEl.innerHTML = "";
+        items.forEach((book) => {
+          const card = document.createElement("article");
+          card.className = "card";
+          card.innerHTML = `
+        <img class="cover" src="${book.cover}" alt="Cover of ${escapeHtml(
+            book.title
+          )}">
+        <div class="meta">
+          <h3 class="title">${escapeHtml(book.title)}</h3>
+          <div class="author">by ${escapeHtml(
+            book.author
+          )} • <span class="small">${escapeHtml(book.category)}</span></div>
+          <div class="small">Rating: ${book.rating} ★</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+            <div>
+              <div class="price">${currency(book.price)}</div>
+            </div>
+            <div class="actions-row">
+              <button class="btn alt" data-action="view" data-id="${
+                book.id
+              }">View</button>
+              <button class="btn" data-action="add" data-id="${
+                book.id
+              }">Add</button>
+            </div>
+          </div>
+        </div>
+      `;
+          catalogEl.appendChild(card);
+        });
+      }
+
+      // ---------- Pagination ----------
+      function renderPagination(totalPages) {
+        paginationEl.innerHTML = "";
+        for (let i = 1; i <= totalPages; i++) {
+          const p = document.createElement("div");
+          p.className = "page " + (state.page === i ? "active" : "");
+          p.textContent = i;
+          p.addEventListener("click", () => {
+            state.page = i;
+            applyAndRender();
+          });
+          paginationEl.appendChild(p);
+        }
+      }
+
+      // ---------- Cart Functions ----------
+      function addToCart(bookId, qty = 1) {
+        const book = catalog.find((b) => b.id === bookId);
+        if (!book) return;
+        const found = cart.find((i) => i.id === bookId);
+        if (found) found.qty += qty;
+        else cart.push({ id: bookId, qty: qty });
+        saveCart(cart);
+        renderCart();
+      }
+      function removeFromCart(bookId) {
+        cart = cart.filter((i) => i.id !== bookId);
+        saveCart(cart);
+        renderCart();
+      }
+      function updateQty(bookId, qty) {
+        const it = cart.find((i) => i.id === bookId);
+        if (!it) return;
+        it.qty = qty;
+        if (it.qty <= 0) removeFromCart(bookId);
+        saveCart(cart);
+        renderCart();
+      }
+
+      function renderCart() {
+        cartListEl.innerHTML = "";
+        let subtotal = 0;
+        cart.forEach((item) => {
+          const b = catalog.find((x) => x.id === item.id);
+          const el = document.createElement("div");
+          el.className = "cart-item";
+          el.innerHTML = `
+        <img src="${b.cover}" alt="${escapeHtml(
+            b.title
+          )}" style="width:56px;height:80px;border-radius:6px;object-fit:cover">
+        <div style="flex:1">
+          <div style="font-weight:700">${escapeHtml(b.title)}</div>
+          <div class="muted">${escapeHtml(b.author)}</div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+            <div class="small">${currency(b.price)}</div>
+            <div class="qty">
+              <button class="btn alt" data-action="dec" data-id="${
+                b.id
+              }">-</button>
+              <div class="pill">${item.qty}</div>
+              <button class="btn alt" data-action="inc" data-id="${
+                b.id
+              }">+</button>
+            </div>
+          </div>
+        </div>
+      `;
+          cartListEl.appendChild(el);
+          subtotal += b.price * item.qty;
+        });
+        cartSubtotalEl.textContent = currency(subtotal);
+        cartCountEl.textContent = cart.reduce((s, i) => s + i.qty, 0);
+        cartTotalAmount.textContent = currency(subtotal);
+        // bind cart item buttons
+        cartListEl.querySelectorAll("button").forEach((btn) => {
+          const action = btn.dataset.action;
+          const id = parseInt(btn.dataset.id);
+          btn.addEventListener("click", () => {
+            if (action === "inc")
+              updateQty(id, cart.find((x) => x.id === id).qty + 1);
+            if (action === "dec")
+              updateQty(id, cart.find((x) => x.id === id).qty - 1);
+          });
+        });
+      }
+
+      // ---------- Modals ----------
+      function openModal(contentHtml) {
+        const root = document.getElementById("modal-root");
+        root.style.display = "block";
+        root.innerHTML = `
+      <div class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal">${contentHtml}</div>
+      </div>
+    `;
+        root.querySelector(".modal-backdrop").addEventListener("click", (e) => {
+          if (e.target.classList.contains("modal-backdrop")) closeModal();
+        });
+      }
+      function closeModal() {
+        const root = document.getElementById("modal-root");
+        root.style.display = "none";
+        root.innerHTML = "";
+      }
+
+      function showProductModal(bookId) {
+        const b = catalog.find((x) => x.id === bookId);
+        if (!b) return;
+        const html = `
+      <div style="display:flex;gap:16px;flex-direction:column">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <img src="${b.cover}" alt="${escapeHtml(
+          b.title
+        )}" style="width:220px;border-radius:10px;object-fit:cover">
+          <div>
+            <h2 style="margin:0">${escapeHtml(b.title)}</h2>
+            <div class="muted">by ${escapeHtml(b.author)} • ${escapeHtml(
+          b.category
+        )}</div>
+            <div style="margin-top:12px">${currency(b.price)}</div>
+            <div style="margin-top:12px"><button class="btn" id="modal-add">Add to cart</button> <button class="btn alt" id="modal-close">Close</button></div>
+          </div>
+        </div>
+        <div class="muted">Description (demo): This is a demo description. Replace with real book copy.</div>
+      </div>
+    `;
+        openModal(html);
+        document.getElementById("modal-add").addEventListener("click", () => {
+          addToCart(b.id);
+          closeModal();
+        });
+        document
+          .getElementById("modal-close")
+          .addEventListener("click", closeModal);
+      }
+
+      function showCheckout() {
+        const subtotal = cart.reduce((s, i) => {
+          const b = catalog.find((x) => x.id === i.id);
+          return s + (b ? b.price * i.qty : 0);
+        }, 0);
+        const html = `
+      <div>
+        <h2>Checkout</h2>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <div style="flex:1">
+            <label class="muted">Full name</label>
+            <input id="checkout-name" placeholder="Jane Doe">
+            <label class="muted">Email</label>
+            <input id="checkout-email" placeholder="you@email.com">
+            <label class="muted">Address</label>
+            <input id="checkout-address" placeholder="Street address">
+          </div>
+          <div style="width:320px">
+            <div class="muted">Order summary</div>
+            <div style="background:var(--glass);padding:12px;border-radius:8px;margin-top:8px">
+              <div class="muted">Subtotal</div>
+              <div style="font-weight:800">${currency(subtotal)}</div>
+              <div class="muted" style="margin-top:8px">Payment (demo) — we do not process payments here.</div>
+              <button class="btn" id="confirm-order" style="margin-top:10px">Confirm Order</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+        openModal(html);
+        document
+          .getElementById("confirm-order")
+          .addEventListener("click", () => {
+            // simple mock: clear cart and show thank you
+            closeModal();
+            cart = [];
+            saveCart(cart);
+            renderCart();
+            openModal(
+              `<div style="text-align:center"><h2>Thank you!</h2><p>Your order has been placed (demo).</p><div style="margin-top:12px"><button class=\"btn\" id=\"close-thanks\">Close</button></div></div>`
+            );
+            document
+              .getElementById("close-thanks")
+              .addEventListener("click", closeModal);
+          });
+      }
+
+      // ---------- Admin ----------
+      document.getElementById("admin-toggle").addEventListener("click", () => {
+        const p = document.getElementById("admin-panel");
+        p.style.display = p.style.display === "none" ? "block" : "none";
+      });
+      document.getElementById("admin-add").addEventListener("click", () => {
+        const t = document.getElementById("admin-title").value.trim();
+        const a = document.getElementById("admin-author").value.trim();
+        const pr =
+          parseFloat(document.getElementById("admin-price").value) || 0;
+        const cov =
+          document.getElementById("admin-cover").value.trim() ||
+          `https://picsum.photos/seed/book${Date.now()}/300/420`;
+        const cat = document.getElementById("admin-category").value;
+        if (!t || !a) {
+          alert("Please fill title and author");
+          return;
+        }
+        const newId = Math.max(0, ...catalog.map((x) => x.id)) + 1;
+        const newBook = {
+          id: newId,
+          title: t,
+          author: a,
+          price: pr,
+          category: cat,
+          rating: 4.0,
+          cover: cov,
+        };
+        catalog.unshift(newBook);
+        saveCatalog(catalog);
+        renderCategoryChips();
+        applyAndRender();
+        // clear form
+        document.getElementById("admin-title").value = "";
+        document.getElementById("admin-author").value = "";
+        document.getElementById("admin-price").value = "";
+        document.getElementById("admin-cover").value = "";
+      });
+
+      // ---------- Event Delegation for Catalog (view/add) ----------
+      catalogEl.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = parseInt(btn.dataset.id);
+        if (action === "view") showProductModal(id);
+        if (action === "add") addToCart(id);
+      });
+
+      // ---------- Filters binding ----------
+      document.getElementById("apply-filters").addEventListener("click", () => {
+        const mn = parseFloat(document.getElementById("min-price").value);
+        const mx = parseFloat(document.getElementById("max-price").value);
+        state.minPrice = isFinite(mn) ? mn : null;
+        state.maxPrice = isFinite(mx) ? mx : null;
+        state.sort = sortEl.value;
+        runFilters();
+      });
+      document.getElementById("reset-filters").addEventListener("click", () => {
+        document.getElementById("min-price").value = "";
+        document.getElementById("max-price").value = "";
+        sortEl.value = "featured";
+        state.minPrice = null;
+        state.maxPrice = null;
+        state.sort = "featured";
+        state.category = null;
+        searchInput.value = "";
+        runFilters();
+        renderCategoryChips();
+      });
+      searchInput.addEventListener(
+        "input",
+        debounce(() => {
+          runFilters();
+        }, 300)
+      );
+      perPageEl.addEventListener("change", () => {
+        state.perPage = parseInt(perPageEl.value);
+        applyAndRender();
+      });
+
+      // ---------- Cart open/close ----------
+      document.getElementById("open-cart").addEventListener("click", () => {
+        cartDrawer.style.display = "block";
+      });
+      document.getElementById("close-cart").addEventListener("click", () => {
+        cartDrawer.style.display = "none";
+      });
+      document.getElementById("checkout").addEventListener("click", () => {
+        showCheckout();
+      });
+
+      // ---------- Drag and drop example: add cover to admin (optional UX) ----------
+      // (omitted for brevity)
+
+      // ---------- Initialize ----------
+      renderCategoryChips();
+      applyAndRender();
+      renderCart();
+
+      // ---------- Helper Functions ----------
+      function debounce(fn, ms) {
+        let t;
+        return (...a) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...a), ms);
+        };
+      }
+      function escapeHtml(s) {
+        return (s + "").replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[c])
+        );
+      }
+
+      // expose to window for debugging
+      window.app = { catalog, cart, addToCart, removeFromCart };
+    </script>
+  </body>
+</html>
